@@ -121,14 +121,7 @@ def bfs(player, room_queue):
                     room_queue.enqueue(i)
                     current_path = path
                     break
-        # # For all of the vertices acosiated with the vertex Then add A PATH TO its neighbors to the back of the queue
-        # for next_vertex in self.vertices[vertex]:
-        #     # copy the path that we used in order to get to this vertex
-        #     new_path = list(path)
-        #     # append the next vertex accosiated with the vertex to the new path
-        #     new_path.append(next_vertex)
-        #     # Store the list in the Queue and reloop
-        #     q.enqueue(new_path)
+
 
 def find_shortest_path(player, room_queue):
     q = Queue()
