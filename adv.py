@@ -35,11 +35,11 @@ class Stack():
         return len(self.stack)
 
 # You may uncomment the smaller graphs for development and testing purposes.
-map_file = "maps/test_line.txt"
+# map_file = "maps/test_line.txt"
 # map_file = "maps/test_cross.txt"
 # map_file = "maps/test_loop.txt"
 # map_file = "maps/test_loop_fork.txt"
-# map_file = "maps/main_maze.txt"
+map_file = "maps/main_maze.txt"
 
 # Loads the map into a dictionary
 room_graph=literal_eval(open(map_file, "r").read())
@@ -52,7 +52,7 @@ player = Player(world.starting_room)
 print('PLAYEERRRR!!', player.current_room.id)
 print('EXITS!!', player.current_room.get_exits())
 
-print('TRAVVELLLL!!', player.travel(['s']))
+# print('TRAVVELLLL!!', player.travel(['s']))
 
 
 # TASK: CONSTRUCT MY OWN TRAVERSAL GRAPH
@@ -75,10 +75,9 @@ print('TRAVVELLLL!!', player.travel(['s']))
     # When hitting a dead-end, move back to the nearest room that contains an unexplored path. Until room with exit '?'.
 
 
-
 # CREATAE SEPARATE FUNCTIONS FOR BFS AND DFT
 
-# start at player.current_room
+# start at player.current_room.id
 
 # loop over using dft until there is a dead-end
     # on every move a new direction, add the room to traverse path and mark visited
@@ -89,36 +88,107 @@ print('TRAVVELLLL!!', player.travel(['s']))
 
 # then repeat a dft until reaching the next dead-end and repeat bfs to find the next shortest path
 
+
 # Fill this out with directions to walk
 # traversal_path = ['n', 'n']
-traversal_path = []
+# traversal_path = []
 
-def dft(player):
-    """
-    Print each vertex in depth-first order
-    beginning from starting_vertex.
-    """
-    # create an empty stack, push the starting vertex index
-    s = Stack()
-    s.push(player.current_room.id)
+direction_pairs = {'n': 's', 's': 'n', 'w': 'e', 'e': 'w'}
+
+def bfs(player, room_queue):
+    # get player current room id
+    current_rooms = rooms[player.current_room.id]
+    # store unexplored exits
+    unexplored_rooms = []
+    # Loop over current room
+    for room in current_rooms:
+        # check if room direction is ?
+        if current_rooms[room] == '?':
+            # add to unexplored exits
+            unexplored_rooms.append(room)
+    # if unexplored
+    if len(unexplored_rooms) > 0:
+        room_queue.enqueue(unexplored_rooms[0])
+    else:
+        unexplored_path = find_shortest_path(player, room_queue)
+
+        current_path = player.current_room.id
+
+        for path in unexplored_path:
+            for d in rooms[current_path]:
+                if rooms[current_path][d] == path:
+                    room_queue.enqueue(d)
+                    current_path = path
+                    break
+        # # For all of the vertices acosiated with the vertex Then add A PATH TO its neighbors to the back of the queue
+        # for next_vertex in self.vertices[vertex]:
+        #     # copy the path that we used in order to get to this vertex
+        #     new_path = list(path)
+        #     # append the next vertex accosiated with the vertex to the new path
+        #     new_path.append(next_vertex)
+        #     # Store the list in the Queue and reloop
+        #     q.enqueue(new_path)
+
+def find_shortest_path(player, room_queue):
+    q = Queue()
     # create a set to store the visited vertices
-    visited = []
-    # while stack is not empty (len greater than 0)
-    while s.size() > 0:
-        # pop the first vertex
-        current_room = s.pop()
-        # if that vertex has not been visitied 
-        if current_room not in visited:
-            # mark as visited and print for debugging
-            visited.append(current_room)
-            print(current_room)
-            # iterate through the child vertices of the current vertex
-            for next_vertex in current_room.get_exits():
-                # push the next vertex
-                s.push(next_vertex)
+    visited = set()
+    q.enqueue([player.current_room.id])
+    # while queue is not empty (len greater than 0)
+    while q.size() > 0:
+        room = q.dequeue()
+        last_path = room[-1]
+        if last_path not in visited:
+            visited.add(last_path)
+            print('last_path:', last_path)
+            for exit in rooms[last_path]:
+                if rooms[last_path][exit] == '?':
+                    return room
+                else:
+                    new_path = list(room)
+                    new_path.append(rooms[last_path][exit])
+                    # Store the list in the Queue and reloop
+                    q.enqueue(new_path)
+    return []
 
 
 # TRAVERSAL TEST
+traversal_path = []
+rooms = {}
+current_room = {}
+# player_at_current_room = player.current_room.id
+
+for exit in player.current_room.get_exits():
+        current_room[exit] = '?'
+rooms[player.current_room.id] = current_room
+
+room_queue = Queue()
+
+bfs(player, room_queue)
+
+while room_queue.size() > 0:
+    start_room = player.current_room.id
+    print('start', start_room)
+    next_move = room_queue.dequeue()
+    print('next', next_move)
+
+    player.travel(next_move)
+    traversal_path.append(next_move)
+
+    last_room = player.current_room.id
+    rooms[start_room][next_move] = last_room
+
+    if last_room not in rooms:
+        rooms[last_room] = {}
+
+        for direction in player.current_room.get_exits():
+            rooms[last_room][direction] = '?'
+
+    rooms[last_room][direction_pairs[next_move]] = start_room
+
+    if room_queue.size() == 0:
+        bfs(player, room_queue)
+
 visited_rooms = set()
 player.current_room = world.starting_room
 visited_rooms.add(player.current_room)
@@ -138,12 +208,12 @@ else:
 #######
 # UNCOMMENT TO WALK AROUND
 #######
-player.current_room.print_room_description(player)
-while True:
-    cmds = input("-> ").lower().split(" ")
-    if cmds[0] in ["n", "s", "e", "w"]:
-        player.travel(cmds[0], True)
-    elif cmds[0] == "q":
-        break
-    else:
-        print("I did not understand that command.")
+# player.current_room.print_room_description(player)
+# while True:
+#     cmds = input("-> ").lower().split(" ")
+#     if cmds[0] in ["n", "s", "e", "w"]:
+#         player.travel(cmds[0], True)
+#     elif cmds[0] == "q":
+#         break
+#     else:
+#         print("I did not understand that command.")
