@@ -88,9 +88,6 @@ print('EXITS!!', player.current_room.get_exits())
 
 # then repeat a dft until reaching the next dead-end and repeat bfs to find the next shortest path
 
-
-# Fill this out with directions to walk
-# traversal_path = ['n', 'n']
 # traversal_path = []
 
 direction_pairs = {'n': 's', 's': 'n', 'w': 'e', 'e': 'w'}
@@ -98,26 +95,30 @@ direction_pairs = {'n': 's', 's': 'n', 'w': 'e', 'e': 'w'}
 def bfs(player, room_queue):
     # get player current room id
     current_rooms = rooms[player.current_room.id]
-    # store unexplored exits
+    # store unexplored rooms
     unexplored_rooms = []
     # Loop over current room
     for room in current_rooms:
         # check if room direction is ?
         if current_rooms[room] == '?':
-            # add to unexplored exits
+            # add to unexplored rooms
             unexplored_rooms.append(room)
-    # if unexplored
+    # check if the length is greater than 0
     if len(unexplored_rooms) > 0:
+        # if it is add the first item to the queue
         room_queue.enqueue(unexplored_rooms[0])
+    # otherwise
     else:
+        # save the shortest unexplored path in a variable using our helper funciton 
         unexplored_path = find_shortest_path(player, room_queue)
 
         current_path = player.current_room.id
-
+        # loop over each path in our unexplored variable and each item in the rooms at the current path 
         for path in unexplored_path:
-            for d in rooms[current_path]:
-                if rooms[current_path][d] == path:
-                    room_queue.enqueue(d)
+            for i in rooms[current_path]:
+                # if equal to the path store it in the queue and update the current path
+                if rooms[current_path][i] == path:
+                    room_queue.enqueue(i)
                     current_path = path
                     break
         # # For all of the vertices acosiated with the vertex Then add A PATH TO its neighbors to the back of the queue
@@ -138,14 +139,19 @@ def find_shortest_path(player, room_queue):
     while q.size() > 0:
         room = q.dequeue()
         last_path = room[-1]
+        # if this last path is not in visited, add it
         if last_path not in visited:
             visited.add(last_path)
-            print('last_path:', last_path)
+            # loop over all of the exits acosiated with the room
             for exit in rooms[last_path]:
+                # check to see if the exit at that room is equal to ? (unvisited)
                 if rooms[last_path][exit] == '?':
+                    # if so, return the room
                     return room
                 else:
+                    # copy the path that we used in order to get to this exit for this room
                     new_path = list(room)
+                    # append the next vertex accosiated with the exit to the new path
                     new_path.append(rooms[last_path][exit])
                     # Store the list in the Queue and reloop
                     q.enqueue(new_path)
@@ -156,7 +162,6 @@ def find_shortest_path(player, room_queue):
 traversal_path = []
 rooms = {}
 current_room = {}
-# player_at_current_room = player.current_room.id
 
 for exit in player.current_room.get_exits():
         current_room[exit] = '?'
@@ -168,9 +173,9 @@ bfs(player, room_queue)
 
 while room_queue.size() > 0:
     start_room = player.current_room.id
-    print('start', start_room)
+    # print('start', start_room)
     next_move = room_queue.dequeue()
-    print('next', next_move)
+    # print('next', next_move)
 
     player.travel(next_move)
     traversal_path.append(next_move)
