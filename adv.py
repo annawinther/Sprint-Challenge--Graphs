@@ -49,8 +49,8 @@ world.load_graph(room_graph)
 world.print_rooms()
 
 player = Player(world.starting_room)
-print('PLAYEERRRR!!', player.current_room.id)
-print('EXITS!!', player.current_room.get_exits())
+# print('PLAYEERRRR!!', player.current_room.id)
+# print('EXITS!!', player.current_room.get_exits())
 
 # print('TRAVVELLLL!!', player.travel(['s']))
 
@@ -88,103 +88,174 @@ print('EXITS!!', player.current_room.get_exits())
 
 # then repeat a dft until reaching the next dead-end and repeat bfs to find the next shortest path
 
-# traversal_path = []
-
+traversal_path = []
 direction_pairs = {'n': 's', 's': 'n', 'w': 'e', 'e': 'w'}
 
-def bfs(player, room_queue):
-    # get player current room id
-    current_rooms = rooms[player.current_room.id]
-    # store unexplored rooms
-    unexplored_rooms = []
-    # Loop over current room
-    for room in current_rooms:
-        # check if room direction is ?
-        if current_rooms[room] == '?':
-            # add to unexplored rooms
-            unexplored_rooms.append(room)
-    # check if the length is greater than 0
-    if len(unexplored_rooms) > 0:
-        # if it is add the first item to the queue
-        room_queue.enqueue(unexplored_rooms[0])
-    # otherwise
+room_graph = {}
+
+# refactor to use helper funcitons
+
+# function to set the all exits for the current room
+def set_exits(room):
+    # assign the room key to an empty dict
+    room_graph[room] = {}
+    # loop over all exits of the current room 
+    for exit in player.current_room.get_exits():
+        # create a key in the room for all directions and assign '?'
+        room_graph[room][exit] = '?'
+
+# connect rooms connects the current room with the previous room 
+def connect_rooms(previous_room, current_room, direction):
+    # if the key does not exist 
+    if not room_graph.get(current_room):
+        # set it using our set_exits helper function
+        set_exits(current_room)
+    # set the directions to connect to the 2 rooms in apposing directions
+    room_graph[previous_room][direction] = current_room
+    room_graph[current_room][direction_pairs[direction]] = previous_room
+
+# this returns a list of the unexplored exits for a room 
+def unexplored(room):
+    # create a dict of unexplored exits for that room
+    unexplored_exits = []
+    # loop over each exit of the extis to the current roo,
+    for exit in player.current_room.get_exits():
+        # if the exit is unexplored (has a '?')
+        if room_graph[room][exit] == '?':
+            # append exit to the dict
+            unexplored_exits.append(exit)
+    # return the dict of unexplored exits
+    return unexplored_exits
+
+# start with the first room and set exits for this room 
+set_exits(player.current_room.id)
+# set the first previous room to be the current room player is at
+previous_room = player.current_room.id
+
+# then to keep track of our route, use Stack and push the starting room to it
+route = Stack()
+route.push(player.current_room)
+
+# loop over until we've visited all of the rooms (len of our room graph is smaller than the len of room sin the world)
+while len(room_graph) < len(world.rooms):
+    # if the previous room is in unexplored
+    if unexplored(previous_room):
+        # get the last exit from the stack and assing it to the move
+        move = (unexplored(previous_room)).pop()
+        # push that move onto our stack
+        route.push(move)
+    # otherwise
     else:
-        # save the shortest unexplored path in a variable using our helper funciton 
-        unexplored_path = find_shortest_path(player, room_queue)
+        # set the move to go the other way
+        move = direction_pairs[route.pop()]
+        print('MOVE', move)
+    
+    print('-' * 20)
+    player.travel(move)
+    print(f'you were in room {previous_room}')
+    print(f'you are in room {player.current_room.id}')
+    # print(player.current_room.get_exits())
 
-        current_path = player.current_room.id
-        # loop over each path in our unexplored variable and each item in the rooms at the current path 
-        for path in unexplored_path:
-            for i in rooms[current_path]:
-                # if equal to the path store it in the queue and update the current path
-                if rooms[current_path][i] == path:
-                    room_queue.enqueue(i)
-                    current_path = path
-                    break
-
-def find_shortest_path(player, room_queue):
-    q = Queue()
-    # create a set to store the visited vertices
-    visited = set()
-    q.enqueue([player.current_room.id])
-    # while queue is not empty (len greater than 0)
-    while q.size() > 0:
-        room = q.dequeue()
-        last_path = room[-1]
-        # if this last path is not in visited, add it
-        if last_path not in visited:
-            visited.add(last_path)
-            # loop over all of the exits acosiated with the room
-            for exit in rooms[last_path]:
-                # check to see if the exit at that room is equal to ? (unvisited)
-                if rooms[last_path][exit] == '?':
-                    # if so, return the room
-                    return room
-                else:
-                    # copy the path that we used in order to get to this exit for this room
-                    new_path = list(room)
-                    # append the next vertex accosiated with the exit to the new path
-                    new_path.append(rooms[last_path][exit])
-                    # Store the list in the Queue and reloop
-                    q.enqueue(new_path)
-    return []
+    traversal_path.append(move)
+    connect_rooms(previous_room, player.current_room.id, move)
+    previous_room = player.current_room.id
+    # print('-' * 20)
 
 
-# TRAVERSAL TEST
-traversal_path = []
-rooms = {}
-current_room = {}
 
-for exit in player.current_room.get_exits():
-        current_room[exit] = '?'
-rooms[player.current_room.id] = current_room
+# def bfs(player, room_queue):
+#     # get player current room id
+#     current_rooms = rooms[player.current_room.id]
+#     # store unexplored rooms
+#     unexplored_rooms = []
+#     # Loop over current room
+#     for room in current_rooms:
+#         # check if room direction is ?
+#         if current_rooms[room] == '?':
+#             # add to unexplored rooms
+#             unexplored_rooms.append(room)
+#     # check if the length is greater than 0
+#     if len(unexplored_rooms) > 0:
+#         # if it is add the first item to the queue
+#         room_queue.enqueue(unexplored_rooms[0])
+#     # otherwise
+#     else:
+#         # save the shortest unexplored path in a variable using our helper funciton 
+#         unexplored_path = find_shortest_path(player, room_queue)
 
-room_queue = Queue()
+#         current_path = player.current_room.id
+#         # loop over each path in our unexplored variable and each item in the rooms at the current path 
+#         for path in unexplored_path:
+#             for i in rooms[current_path]:
+#                 # if equal to the path store it in the queue and update the current path
+#                 if rooms[current_path][i] == path:
+#                     room_queue.enqueue(i)
+#                     current_path = path
+#                     break
 
-bfs(player, room_queue)
+# def find_shortest_path(player, room_queue):
+#     q = Queue()
+#     # create a set to store the visited vertices
+#     visited = set()
+#     q.enqueue([player.current_room.id])
+#     # while queue is not empty (len greater than 0)
+#     while q.size() > 0:
+#         room = q.dequeue()
+#         last_path = room[-1]
+#         # if this last path is not in visited, add it
+#         if last_path not in visited:
+#             visited.add(last_path)
+#             # loop over all of the exits acosiated with the room
+#             for exit in rooms[last_path]:
+#                 # check to see if the exit at that room is equal to ? (unvisited)
+#                 if rooms[last_path][exit] == '?':
+#                     # if so, return the room
+#                     return room
+#                 else:
+#                     # copy the path that we used in order to get to this exit for this room
+#                     new_path = list(room)
+#                     # append the next vertex accosiated with the exit to the new path
+#                     new_path.append(rooms[last_path][exit])
+#                     # Store the list in the Queue and reloop
+#                     q.enqueue(new_path)
+#     return []
 
-while room_queue.size() > 0:
-    start_room = player.current_room.id
-    # print('start', start_room)
-    next_move = room_queue.dequeue()
-    # print('next', next_move)
 
-    player.travel(next_move)
-    traversal_path.append(next_move)
+# # TRAVERSAL TEST
+# # traversal_path = []
+# rooms = {}
+# current_room = {}
 
-    last_room = player.current_room.id
-    rooms[start_room][next_move] = last_room
+# for exit in player.current_room.get_exits():
+#         current_room[exit] = '?'
+# rooms[player.current_room.id] = current_room
 
-    if last_room not in rooms:
-        rooms[last_room] = {}
+# room_queue = Queue()
 
-        for direction in player.current_room.get_exits():
-            rooms[last_room][direction] = '?'
+# bfs(player, room_queue)
 
-    rooms[last_room][direction_pairs[next_move]] = start_room
+# while room_queue.size() > 0:
+#     start_room = player.current_room.id
+#     # print('start', start_room)
+#     next_move = room_queue.dequeue()
+#     # print('next', next_move)
 
-    if room_queue.size() == 0:
-        bfs(player, room_queue)
+#     player.travel(next_move)
+#     traversal_path.append(next_move)
+
+#     last_room = player.current_room.id
+#     rooms[start_room][next_move] = last_room
+
+#     if last_room not in rooms:
+#         rooms[last_room] = {}
+
+#         for direction in player.current_room.get_exits():
+#             rooms[last_room][direction] = '?'
+
+#     rooms[last_room][direction_pairs[next_move]] = start_room
+
+#     if room_queue.size() == 0:
+#         bfs(player, room_queue)
 
 visited_rooms = set()
 player.current_room = world.starting_room
