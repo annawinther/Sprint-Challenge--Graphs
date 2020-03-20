@@ -122,7 +122,6 @@ def bfs(player, room_queue):
                     current_path = path
                     break
 
-
 def find_shortest_path(player, room_queue):
     q = Queue()
     # create a set to store the visited vertices
